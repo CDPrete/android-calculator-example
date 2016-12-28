@@ -136,7 +136,7 @@ public class CalculatorActivity extends AppCompatActivity {
         Checker.notNull(number, "Number pressed");
 
         final String currentValue = resultTextView.getText().toString();
-        if(currentValue == null || currentValue.length() == 0 || currentValue.equals("0.0")) {
+        if(currentValue.equals("0.0") || currentValue.equals("0")) {
             resultTextView.setText(number);
         } else {
             resultTextView.append(number);
