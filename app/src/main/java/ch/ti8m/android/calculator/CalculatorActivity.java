@@ -22,6 +22,11 @@ import ch.ti8m.android.calculator.util.Checker;
 public class CalculatorActivity extends AppCompatActivity {
     private static final String LOG_TAG = CalculatorActivity.class.getCanonicalName();
 
+    private static final String VALUE_KEY = "value";
+    private static final String OPERATION_KEY = "operation";
+
+    private TextView resultTextView;
+
     private Double value;
     private String operation;
 
@@ -38,7 +43,7 @@ public class CalculatorActivity extends AppCompatActivity {
         setContentView(R.layout.activity_calculator);
 
         //Retrieves the text field from the layout using the view's ID
-        final TextView resultTextView = (TextView) findViewById(R.id.resultTextView);
+        resultTextView = (TextView) findViewById(R.id.resultTextView);
 
         //Retrieves the root view from the layout using the view's ID
         final View rootView = findViewById(R.id.rootView);
@@ -70,7 +75,7 @@ public class CalculatorActivity extends AppCompatActivity {
                     case R.id.button7:
                     case R.id.button8:
                     case R.id.button9:
-                        setTextViewValue(resultTextView, v.getTag().toString());
+                        setTextViewValue(v.getTag().toString());
                         break;
                     //For the operational buttons (+, -, *, /, =) we need to calculate a result until this moment
                     case R.id.buttonPlus:
@@ -78,10 +83,10 @@ public class CalculatorActivity extends AppCompatActivity {
                     case R.id.buttonTimes:
                     case R.id.buttonDiv:
                     case R.id.buttonEqual:
-                        calculateIntermediateResult(resultTextView, v.getTag().toString());
+                        calculateIntermediateResult(v.getTag().toString());
                         break;
                     case R.id.buttonClear:
-                        clearAll(resultTextView);
+                        clearAll();
                         break;
 
                     default:
@@ -93,7 +98,45 @@ public class CalculatorActivity extends AppCompatActivity {
         //Initializes the buttons inside the root views
         initButtons(rootView, onClickListener);
 
-        resetResultTextView(resultTextView);
+        resetResultTextView();
+    }
+
+    /**
+     * Called between onPause and onStop methods to save the computational state
+     * @param outState dictionary where to save the computational state
+     */
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        outState.putSerializable(VALUE_KEY, value);
+        outState.putString(OPERATION_KEY, operation);
+
+        super.onSaveInstanceState(outState);
+    }
+
+    /**
+     * Called between onStart and onResume to restore the (eventually) saved computational state.
+     * @param savedInstanceState the dictionary containing the computational state.
+     */
+    @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+
+        if(savedInstanceState != null) {
+            value = (Double) savedInstanceState.getSerializable(VALUE_KEY);
+            operation = savedInstanceState.getString(OPERATION_KEY);
+        }
+    }
+
+    /**
+     * Called after onStart
+     */
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        if(value != null) {
+            setResultTextViewCurrentValue();
+        }
     }
 
     /**
@@ -125,18 +168,15 @@ public class CalculatorActivity extends AppCompatActivity {
 
     /**
      * Updates the result TextView field with the digit pressed
-     * @param resultTextView a reference to the result TextView
      * @param number the digit pressed
      */
-    private void setTextViewValue(@NonNull final TextView resultTextView,
-                                  @NonNull final String number) {
+    private void setTextViewValue(@NonNull final String number) {
         //Just to make the code more robust.
         //Theoretically you should know how to invoke your private methods.
-        Checker.notNull(resultTextView, "Result TextView");
         Checker.notNull(number, "Number pressed");
 
-        final String currentValue = resultTextView.getText().toString();
-        if(currentValue.equals("0.0") || currentValue.equals("0")) {
+        final double currentValue = Double.parseDouble(resultTextView.getText().toString());
+        if(currentValue == 0d) {
             resultTextView.setText(number);
         } else {
             resultTextView.append(number);
@@ -147,13 +187,11 @@ public class CalculatorActivity extends AppCompatActivity {
 
     /**
      * Calculates the result until the current moment
-     * @param resultTextView a reference to the result TextView
      * @param oper the operation chosen
      */
-    private void calculateIntermediateResult(@NonNull final TextView resultTextView, @NonNull final String oper) {
+    private void calculateIntermediateResult(@NonNull final String oper) {
         //Just to make the code more robust.
         //Theoretically you should know how to invoke your private methods.
-        Checker.notNull(resultTextView, "Result TextView");
         Checker.notNull(oper, "Operation");
 
         //Retrieves the current number present in the result TextView
@@ -163,7 +201,7 @@ public class CalculatorActivity extends AppCompatActivity {
         if(value == null) {
             //...then store the value, reset the text field and go on.
             value = number;
-            resetResultTextView(resultTextView);
+            resetResultTextView();
         } else {
             //...otherwise perform the previous chose operation...
             switch (operation) {
@@ -185,7 +223,7 @@ public class CalculatorActivity extends AppCompatActivity {
         }
 
         //...set the calculated value in the result TextView...
-        resultTextView.setText(Double.toString(value));
+        setResultTextViewCurrentValue();
 
         Log.d(LOG_TAG, "Current value: " + value);
 
@@ -199,20 +237,27 @@ public class CalculatorActivity extends AppCompatActivity {
 
     /**
      * Resets everything
-     * @param resultTextView a reference to the result TextView
      */
-    private void clearAll(@NonNull final TextView resultTextView) {
+    private void clearAll() {
         value = null;
         operation = null;
 
-        resetResultTextView(resultTextView);
+        resetResultTextView();
     }
 
-    private void resetResultTextView(@NonNull final TextView resultTextView) {
-        //Just to make the code more robust.
-        //Theoretically you should know how to invoke your private methods.
-        Checker.notNull(resultTextView, "Result TextView");
+    private void resetResultTextView() {
+        setResultTextViewText(0d);
+    }
 
-        resultTextView.setText("0.0");
+    private void setResultTextViewCurrentValue() {
+        setResultTextViewText(value);
+    }
+
+    private void setResultTextViewText(@Nullable final Double value) {
+        String text = null;
+        if(value != null) {
+            text = Double.toString(value);
+        }
+        resultTextView.setText(text);
     }
 }
