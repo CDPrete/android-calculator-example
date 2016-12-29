@@ -15,6 +15,7 @@ import ch.ti8m.android.calculator.util.Checker;
 
 /**
  * Application activity.
+ * For further information: https://developer.android.com/guide/components/activities/index.html
  *
  * @author Cosimo Damiano Prete
  * @since 26/12/2016
